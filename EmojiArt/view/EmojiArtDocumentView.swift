@@ -24,21 +24,44 @@ struct EmojiArtDocumentView: View {
         
         GeometryReader { geo in
             ZStack {
-                Color.orange
-                ForEach(document.emojis) { emoji in
-                    Text(emoji.text)
-                        .font(.system(size: fontSize(for: emoji)))
-                        .position(position(for: emoji, in: geo))
+                Color.white.overlay(
+                    OptionalImage(uiImage: document.backgroundImage)
+                        .position(convertFromEmojiCoordinates((0, 0), in: geo))
+                )
+                if document.bgFetchStatus == .fetching {
+                    ProgressView()
+                        .scaleEffect(2)
+                } else {
+                    ForEach(document.emojis) { emoji in
+                        Text(emoji.text)
+                            .font(.system(size: fontSize(for: emoji)))
+                            .position(position(for: emoji, in: geo))
+                    }                    
                 }
             }
-            .onDrop(of: [.plainText], isTargeted: nil) { providers, location in
+            .onDrop(of: [.plainText, .url, .image], isTargeted: nil) { providers, location in
                 return drop(providers: providers, at: location, in: geo)
             }
         }
     }
     
     private func drop(providers:[NSItemProvider], at location: CGPoint, in geo: GeometryProxy) -> Bool {
-        return providers.loadObjects(ofType: String.self) { string in
+        
+        var found = providers.loadObjects(ofType: URL.self) { url in
+            document.setBackground(.url(url.imageURL))
+        }
+        
+        guard !found else { return found }
+        
+        found = providers.loadObjects(ofType: UIImage.self) { image in
+            if let data = image.jpegData(compressionQuality: 1.0) {
+                document.setBackground(.imageData(data))
+            }
+        }
+        
+        guard !found else { return found }
+        
+        found = providers.loadObjects(ofType: String.self) { string in
             
             if let emoji = string.first, emoji.isEmoji {
                 
@@ -48,8 +71,8 @@ struct EmojiArtDocumentView: View {
                                   size: defaultEmojiSize
                 )
             }
-            
         }
+        return found
     }
     
     private func convertToEmojiCoordinates(_ location: CGPoint, in geo: GeometryProxy) -> (x: Int, y: Int) {
