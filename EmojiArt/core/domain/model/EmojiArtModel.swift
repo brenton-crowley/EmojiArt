@@ -7,6 +7,8 @@
 
 import Foundation
 
+// Resume at: https://youtu.be/eNS5EzgK3lY?t=2207
+
 struct EmojiArtModel {
     
     var background = Background.blank
@@ -15,8 +17,8 @@ struct EmojiArtModel {
     struct Emoji: Identifiable, Hashable {
         
         let text: String
-        var x: Int
-        var y: Int
+        var x: Int // offset from the centre
+        var y: Int // offset from the centre
         var size: Int
         let id: Int
         
@@ -27,7 +29,6 @@ struct EmojiArtModel {
             self.size = size
             self.id = id
         }
-        
     }
 
     init() { }
